@@ -1,6 +1,6 @@
 <div align="center">
 
-# ✧ lyris ✧
+# ✧ Lyris ✧
 
 ### lyrics, but make them constellations
 
@@ -28,7 +28,7 @@ Made for the love of music and pretty visuals.
 - **word-level synchronization** -- lyrics follow the music, word by word.
 - **constellation visuals** -- words become part of a little cosmic arrangement.
 - **live playback tracking** -- stays in sync with what's currently playing.
-- **minimal & immersive** -- just music, lyrics, and a little stardust.
+- **minimal & immersive** -- Simple and Simple and ... SIMPLE
 
 ## ✦ getting started
 
