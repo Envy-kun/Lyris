@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Lyric Constellation Live</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div id="stage"><canvas id="c"></canvas><div id="msg"></div></div>
+<div id="bar">
+  <div id="art"></div>
+  <div id="meta"><b id="ti">Nothing playing</b><span id="ar">Start a song, then keep server.js running</span></div>
+  <button id="src-btn">Source: auto</button>
+  <button id="load">Load word-synced file</button>
+  <button id="mm">Mode: auto</button>
+  <button id="fs">Full screen</button>
+  <input id="file" type="file" accept=".xml,.ttml,text/xml,application/xml" hidden>
+</div>
+<script src="script.js"></script>
+</body>
+</html>
