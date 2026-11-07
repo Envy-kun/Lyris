@@ -2,7 +2,7 @@
 
 # ✧ lyris ✧
 
-### lyrics, but make them constellations.
+### lyrics, but make them constellations
 
 *a little lyric visualizer that turns words into stars.*
 
@@ -21,21 +21,21 @@
 
 Lyris is a little lyric visualizer that turns words into stars. It displays word-synced lyrics in a constellation-inspired layout, letting you watch songs unfold one word at a time.
 
-Made for the love of music, pretty visuals, and getting a little too attached to certain songs.
+Made for the love of music and pretty visuals.
 
 ## ✦ features
 
-- **word-level synchronization** — lyrics follow the music, word by word.
-- **constellation visuals** — words become part of a little cosmic arrangement.
-- **live playback tracking** — stays in sync with what's currently playing.
-- **minimal & immersive** — just music, lyrics, and a little stardust.
+- **word-level synchronization** -- lyrics follow the music, word by word.
+- **constellation visuals** -- words become part of a little cosmic arrangement.
+- **live playback tracking** -- stays in sync with what's currently playing.
+- **minimal & immersive** -- just music, lyrics, and a little stardust.
 
 ## ✦ getting started
 
 ### 01 · clone the repository
 
 ```bash
-git clone https://github.com/YOUR_USERNAME/lyris.git
+git clone https://github.com/Envy-kun/lyris.git
 cd lyris
 ```
 
