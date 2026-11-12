@@ -1,5 +1,5 @@
 const SERVER="http://localhost:8787/now";
-const SEEK=1.5;          
+const SEEK=1.5;
 const FONT='-apple-system,"SF Pro Display",Arial,sans-serif';
 
 const clamp01=x=>Math.max(0,Math.min(1,x));
@@ -81,12 +81,12 @@ function store(k,raw){try{localStorage.setItem(storeKey(k),JSON.stringify(raw))}
 
 // ---- page ----
 const cv=document.getElementById("c"),ctx=cv.getContext("2d");
-const ti=document.getElementById("ti"),ar=document.getElementById("ar");
+const ti=document.getElementById("ti"),ar=document.getElementById("ar"),artEl=document.getElementById("art");
 const msgEl=document.getElementById("msg"),mm=document.getElementById("mm");
 const srcBtn=document.getElementById("src-btn");
 const fileIn=document.getElementById("file");
 let W=0,H=0,dpr=1;
-let key="",pendKey=null,pendCount=0,offset=0,hint="",haveTrack=false,dbg=false;
+let key="",pendKey=null,pendCount=0,offset=0,hint="",haveTrack=false,dbg=false,curArt="";
 let mode="auto",autoLines=[],fileLines=null,lines=[];
 let currentSource="auto";
 const bg=Array.from({length:40},(_,i)=>{const r=rnd(i+5);return{x:r(),y:r(),s:r()*1.2+.3,p:r()*6}});
@@ -102,16 +102,16 @@ function toast(t){msgEl.textContent=t;msgEl.style.opacity=1;clearTimeout(msgTime
 function setHint(){
   if(!haveTrack)hint="";
   else if(mode==="file")hint=fileLines?"":"no file loaded for this song — tap Load word-synced file";
-  else hint=autoLines.length?"":"looking for synced lyrics…";
+  else hint=autoLines.length?"":currentSource==="none"?"no synced lyrics found for this song":"looking for synced lyrics…";
 }
 function refresh(){
   lines=mode==="file"?(fileLines||[]):autoLines;
   mm.textContent=mode==="file"?"Mode: my file":"Mode: auto";
-  srcBtn.textContent=`Source: ${currentSource}`;
+  srcBtn.textContent=`Source: ${mode==="file"?"my file":currentSource}`;
   setHint();
 }
 
-const clk={pos:0,last:performance.now(),playing:false,hist:[],pend:null,frozen:0,have:false,err:0,raw:0};
+const clk={pos:0,last:performance.now(),playing:false,hist:[],pend:null,frozen:0,have:false,raw:0};
 const med=a=>{const s=[...a].sort((x,y)=>x-y);return s[s.length>>1]};
 
 function target(now){
@@ -142,7 +142,6 @@ function tick(now){
     const e=tg-clk.pos;
     clk.pos=Math.abs(e)>SEEK?tg:clk.pos+e*Math.min(1,dt*10);
   }
-  clk.err=tg-clk.pos;
   return clk.pos;
 }
 
@@ -150,12 +149,12 @@ function switchTrack(d){
   key=d.key;autoLines=[];offset=0;
   clk.have=false;clk.hist=[];clk.pend=null;clk.playing=false;
   const raw=stored(key);fileLines=raw?buildFile(raw):null;
-  currentSource=d.source||"auto";
+  currentSource="auto";
   mode=fileLines?"file":"auto";
   refresh();
 }
 function handle(d,tMid){
-  if(!d.title)return;
+  if(!d.title){haveTrack=false;setHint();return}   // nothing playing: clear any stale "can't reach" hint
   haveTrack=true;
   if(d.key!==key){
     if(!key){switchTrack(d)}
@@ -169,33 +168,34 @@ function handle(d,tMid){
 
   if(!autoLines.length){
     if(d.rawTtml){
-      try{
-        const parsed = parseTTML(d.rawTtml);
-        autoLines = buildFile(parsed);
-        currentSource = "lrc.red";
-      }catch{}
+      try{autoLines=buildFile(parseTTML(d.rawTtml));currentSource=d.source}catch{}
     }
-    if(!autoLines.length && d.lines && d.lines.length){
-      autoLines = build(d.lines);
-      currentSource = "lrclib";
+    if(!autoLines.length&&d.lines&&d.lines.length){
+      autoLines=build(d.lines);currentSource=d.source;
     }
+    if(!autoLines.length&&d.source==="none")currentSource="none";
     refresh();
   }
 
   ingest(d,tMid);
   ti.textContent=d.title;ar.textContent=d.artist;
+  const a=d.art||"";
+  if(a!==curArt){curArt=a;artEl.style.backgroundImage=a?`url("${a}")`:""}
   setHint();
 }
 
 async function pollLoop(){
   for(;;){
     const t0=performance.now();
+    let d=null;
+    const ctl=new AbortController(),to=setTimeout(()=>ctl.abort(),1500);
     try{
-      const ctl=new AbortController(),to=setTimeout(()=>ctl.abort(),1500);
-      const r=await fetch(SERVER,{signal:ctl.signal,cache:"no-store"});
-      const d=await r.json();clearTimeout(to);
-      handle(d,(t0+performance.now())/2);
+      // tell the server which track we already have lyrics for, so it skips resending them
+      const r=await fetch(SERVER+"?k="+encodeURIComponent(autoLines.length?key:""),{signal:ctl.signal,cache:"no-store"});
+      d=await r.json();
     }catch{hint="can’t reach server.js"}
+    finally{clearTimeout(to)}
+    if(d){try{handle(d,(t0+performance.now())/2)}catch(e){console.error(e)}}
     await new Promise(res=>setTimeout(res,Math.max(100,400-(performance.now()-t0))));
   }
 }
@@ -218,7 +218,7 @@ fileIn.addEventListener("change",async()=>{
 });
 mm.addEventListener("click",()=>{mode=mode==="auto"?"file":"auto";refresh()});
 srcBtn.addEventListener("click",()=>{
-  toast(`Current provider: ${currentSource}`);
+  toast(`Current provider: ${mode==="file"?"my file":currentSource}`);
 });
 
 // ---- drawing & rendering ----
@@ -263,8 +263,7 @@ function drawLine(ln,pos,la,big){
     let fs=(rest+(peak-rest)*a)*(.85+.15*e);
     ctx.font=`600 ${fs}px ${FONT}`;
     const tw0=ctx.measureText(w.w).width;
-    if(tw0>W-40)fs*=(W-40)/tw0;
-    ctx.font=`600 ${fs}px ${FONT}`;
+    if(tw0>W-40){fs*=(W-40)/tw0;ctx.font=`600 ${fs}px ${FONT}`}
     const tw=ctx.measureText(w.w).width;
     let tx=x+13;if(tx+tw>W-10)tx=x-13-tw;
     tx=Math.max(10,tx);
@@ -317,6 +316,7 @@ document.addEventListener("fullscreenchange",fsSync);
 document.addEventListener("webkitfullscreenchange",fsSync);
 
 addEventListener("keydown",e=>{
+  if(e.ctrlKey||e.metaKey||e.altKey)return;   // don't hijack browser shortcuts like Ctrl+F
   if(e.key==="ArrowLeft"||e.key==="ArrowRight"||e.key==="0"){
     const old=offset;
     if(e.key==="ArrowLeft")offset-=.5;else if(e.key==="ArrowRight")offset+=.5;else offset=0;
